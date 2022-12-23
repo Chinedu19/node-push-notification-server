@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Push Notifications</title>
+  </head>
+  <body>
+    <div
+      style="
+        height: calc(100vh - 200px);
+        box-sizing: border-box;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      "
+    >
+      <h1>Hi there!</h1>
+      <p style="text-align: center">
+        This is a test application used to display push notification
+      </p>
+
+      <p>
+        notifcation status:
+        <span style="color: red" id="notification-status">not subscribed</span>
+      </p>
+      <button type="button" id="enable-notification">
+        Enable Notifications
+      </button>
+
+      <button
+        type="button"
+        style="margin-top: 20px"
+        id="send-test-notification"
+      >
+        Send test notifcation
+      </button>
+    </div>
+  </body>
+  <script>
+    const enableNotificationBtn = document.querySelector(
+      "#enable-notification"
+    );
+    const sendTestNotificationBtn = document.querySelector(
+      "#send-test-notification"
+    );
+    const notificationStatus = document.querySelector("#notification-status");
+
+    // register service worker
+    function registerServiceWorkerAndSubscribe() {
+      return navigator.serviceWorker
+        .register("scripts/serviceWorker.js")
+        .then(function (registration) {
+          console.log("Service worker successfully registered.");
+          const subscribeOptions = {
+            userVisibleOnly: true,
+            applicationServerKey:
+              "BDD79tHKrWZ0u580TnGahdUEmHHB1Ecw-P4EX9NU19RPW9BoJyjxNCGR6F7dyLwvBR_htcgEVAZCsmLKMkZQh7U",
+          };
+          return registration.pushManager.subscribe(subscribeOptions);
+        })
+        .then((pushSubscription) => {
+          console.log(
+            "Received PushSubscription: ",
+            JSON.stringify(pushSubscription)
+          );
+          notificationStatus.textContent = "Active";
+          notificationStatus.setAttribute("style", "color:green");
+          return pushSubscription;
+        })
+        .catch(function (err) {
+          console.error("Unable to register service worker.", err);
+        });
+    }
+
+    // check if push notification is supported
+    const checkPushSupport = () => {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        // Service Worker isn't supported on this browser, disable or hide UI.
+        console.warn("push not supported");
+        return false;
+      }
+      console.log("push supported");
+      return true;
+    };
+
+    // ask for notification permission
+    function askPermission() {
+      return new Promise(function (resolve, reject) {
+        const permissionResult = Notification.requestPermission(function (
+          result
+        ) {
+          resolve(result);
+        });
+
+        if (permissionResult) {
+          permissionResult.then(resolve, reject);
+        }
+      }).then(function (permissionResult) {
+        if (permissionResult !== "granted") {
+          throw new Error("We weren't granted permission.");
+        }
+      });
+    }
+
+    enableNotificationBtn.addEventListener("click", () => {
+      if (checkPushSupport()) {
+        // enable serviceW
+
+        askPermission()
+          .then(() => {
+            registerServiceWorkerAndSubscribe();
+          })
+          .catch((e) => console.error(e));
+      }
+    });
+  </script>
+</html>
